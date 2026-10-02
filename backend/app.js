@@ -1,5 +1,8 @@
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const compression = require('compression');
+const { rateLimit } = require('express-rate-limit');
 const { getState, reset } = require('./state');
 const trust = require('./services/trustEngine');
 const analytics = require('./services/analyticsEngine');
@@ -205,8 +208,29 @@ router.post('/reset', wrap((req, res) => {
 
 const app = express();
 app.disable('x-powered-by');
-app.use(cors());
+if (process.env.NETLIFY) app.set('trust proxy', 1);
+const allowedOrigins = new Set(
+  (process.env.CORS_ORIGINS || 'http://localhost:5173,http://127.0.0.1:5173')
+    .split(',').map((origin) => origin.trim()).filter(Boolean)
+);
+app.use(helmet());
+app.use(compression());
+app.use(cors({
+  origin: (origin, callback) => callback(null, !origin || allowedOrigins.has(origin)),
+  methods: ['GET', 'POST', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type'],
+  maxAge: 600
+}));
 app.use(express.json({ limit: '200kb' }));
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 300,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: { message: 'Too many requests. Please try again later.' } }
+});
+app.use('/api', apiLimiter);
+app.use('/.netlify/functions/api', apiLimiter);
 app.use('/api', router);
 app.use('/.netlify/functions/api', router);
 app.use((req, res) => res.status(404).json({ error: { message: 'Endpoint not found' } }));

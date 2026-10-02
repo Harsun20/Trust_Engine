@@ -4,14 +4,20 @@ const app = require('./app');
 
 const server = http.createServer(app).listen(0, async () => {
   const base = `http://localhost:${server.address().port}/api`;
-  const call = async (method, path, body) => {
-    const r = await fetch(base + path, { method, headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
-    return { status: r.status, data: await r.json() };
+  const call = async (method, path, body, headers = {}) => {
+    const r = await fetch(base + path, { method, headers: { 'Content-Type': 'application/json', ...headers }, body: body ? JSON.stringify(body) : undefined });
+    return { status: r.status, data: await r.json(), headers: Object.fromEntries(r.headers.entries()) };
   };
   let failed = 0;
   const check = (name, cond) => { console.log(`${cond ? 'PASS' : 'FAIL'}  ${name}`); if (!cond) failed += 1; };
   try {
-    check('health', (await call('GET', '/health')).data.status === 'ok');
+    const health = await call('GET', '/health');
+    check('health', health.data.status === 'ok');
+    check('security headers', health.headers['x-content-type-options'] === 'nosniff' && Boolean(health.headers['content-security-policy']));
+    const allowedOrigin = await call('GET', '/health', undefined, { Origin: 'http://localhost:5173' });
+    check('allowed CORS origin', allowedOrigin.headers['access-control-allow-origin'] === 'http://localhost:5173');
+    const blockedOrigin = await call('GET', '/health', undefined, { Origin: 'https://untrusted.example' });
+    check('untrusted CORS origin receives no access', !blockedOrigin.headers['access-control-allow-origin']);
     const picks = (await call('GET', '/trust-picks')).data;
     check('trust picks split visible/hidden', picks.picks.length > 0 && picks.hidden.length > 0);
     const top = picks.picks[0];

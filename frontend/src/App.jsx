@@ -9,8 +9,9 @@ import Partners from './pages/Partners.jsx';
 import Orders from './pages/Orders.jsx';
 import Support from './pages/Support.jsx';
 import Analytics from './pages/Analytics.jsx';
+import Solution from './pages/Solution.jsx';
 
-const PAGES = { overview: Overview, customer: Customer, trust: TrustEngine, partners: Partners, orders: Orders, support: Support, analytics: Analytics };
+const PAGES = { overview: Overview, customer: Customer, trust: TrustEngine, partners: Partners, orders: Orders, support: Support, analytics: Analytics, solution: Solution };
 
 export default function App() {
   const { route, navigate, setCart } = useApp();

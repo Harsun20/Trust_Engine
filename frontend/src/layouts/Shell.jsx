@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { BarChart3, ClipboardList, Gauge, Headset, LayoutDashboard, Menu, RotateCcw, ShieldCheck, ShoppingBag, Store, Wallet } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { BarChart3, ClipboardList, Compass, Gauge, Headset, LayoutDashboard, Menu, RotateCcw, ShieldCheck, ShoppingBag, Store, Wallet } from 'lucide-react';
 import { useApp } from '../hooks/useApp.jsx';
 import { useApi } from '../hooks/useApi.js';
 import { api } from '../services/api.js';
@@ -13,7 +13,8 @@ export const NAV = [
   { id: 'partners', label: 'Partner Stores', icon: Store },
   { id: 'orders', label: 'Orders', icon: ClipboardList },
   { id: 'support', label: 'Support Cockpit', icon: Headset },
-  { id: 'analytics', label: 'Analytics', icon: BarChart3 }
+  { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+  { id: 'solution', label: 'Retention Strategy', icon: Compass }
 ];
 
 export default function Shell({ page, children }) {
@@ -22,10 +23,27 @@ export default function Shell({ page, children }) {
   const [confirmReset, setConfirmReset] = useState(false);
   const [info, setInfo] = useState(false);
   const [busy, setBusy] = useState(false);
+  const menuButton = useRef(null);
   const wallet = useApi(() => api.wallet(), []);
   const current = NAV.find((n) => n.id === page);
 
-  const go = (id) => { setOpen(false); navigate(id); };
+  const go = (id) => {
+    setOpen(false);
+    navigate(id);
+    if (window.matchMedia('(max-width: 860px)').matches) menuButton.current?.focus();
+  };
+  useEffect(() => {
+    if (!open) return undefined;
+    document.querySelector('#main-navigation .nav-btn')?.focus();
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') {
+        setOpen(false);
+        menuButton.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', closeOnEscape);
+    return () => window.removeEventListener('keydown', closeOnEscape);
+  }, [open]);
   const doReset = async () => {
     setBusy(true);
     try {
@@ -41,9 +59,9 @@ export default function Shell({ page, children }) {
 
   return (
     <div className="shell">
-      <aside className={`sidebar ${open ? 'open' : ''}`} aria-label="Main navigation">
+      <aside id="main-navigation" className={`sidebar ${open ? 'open' : ''}`} aria-label="Main navigation">
         <div className="brand"><span className="brand-mark"><ShieldCheck size={18} aria-hidden /></span> Nova Cart<br /><span style={{ fontWeight: 500, color: '#94a3b8', fontSize: '.8rem' }}>Trust Engine</span></div>
-        <nav className="stack" style={{ gap: 4 }}>
+        <nav className="stack" aria-label="App pages" style={{ gap: 4 }}>
           {NAV.map(({ id, label, icon: Icon }) => (
             <button key={id} className="nav-btn" aria-current={page === id ? 'page' : undefined} onClick={() => go(id)}>
               <Icon size={18} aria-hidden /> {label}{id === 'customer' && cart.length > 0 ? ` (${cart.reduce((a, c) => a + c.qty, 0)})` : ''}
@@ -56,7 +74,7 @@ export default function Shell({ page, children }) {
       <div className="main">
         <header className="topbar">
           <div className="row">
-            <button className="btn sm menu-btn" aria-label="Open menu" onClick={() => setOpen(true)}><Menu size={18} /></button>
+            <button ref={menuButton} className="btn sm menu-btn" aria-label={open ? 'Close menu' : 'Open menu'} aria-expanded={open} aria-controls="main-navigation" onClick={() => setOpen((value) => !value)}><Menu size={18} aria-hidden="true" /></button>
             <strong>{current?.label}</strong>
           </div>
           <div className="row">
@@ -65,7 +83,8 @@ export default function Shell({ page, children }) {
             <button className="btn sm" onClick={() => setConfirmReset(true)}><RotateCcw size={14} aria-hidden /> Reset Demo</button>
           </div>
         </header>
-        <main className="content page" key={page}>{children}</main>
+        <a className="skip-link" href="#main-content">Skip to main content</a>
+        <main id="main-content" tabIndex="-1" className="content page" key={page}>{children}</main>
       </div>
       {info && (
         <Modal title="Demo Mode" onClose={() => setInfo(false)}>

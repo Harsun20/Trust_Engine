@@ -88,14 +88,22 @@ function Cart({ cart, setCart }) {
         <>
           <h3 style={{ margin: '16px 0 8px' }}>Coupons</h3>
           <div className="stack" style={{ gap: 8 }} role="radiogroup" aria-label="Coupons">
-            {[{ code: 'AUTO', title: 'Auto-apply best valid coupon', eligible: true, reason: q.appliedCoupon ? `Best: ${q.appliedCoupon}` : 'No eligible coupon', discount: 0 }, ...q.couponOptions, { code: 'NONE', title: 'No coupon', eligible: true, reason: '', discount: 0 }].map((o) => (
-              <div key={o.code} role="radio" aria-checked={coupon === o.code} aria-disabled={!o.eligible} tabIndex={o.eligible ? 0 : -1}
+            {[{ code: 'AUTO', title: 'Auto-apply best valid coupon', eligible: true, reason: q.appliedCoupon ? `Best: ${q.appliedCoupon}` : 'No eligible coupon', discount: 0 }, ...q.couponOptions, { code: 'NONE', title: 'No coupon', eligible: true, reason: '', discount: 0 }].map((o, index, options) => (
+              <button key={o.code} type="button" role="radio" aria-checked={coupon === o.code} aria-disabled={!o.eligible} tabIndex={coupon === o.code ? 0 : -1}
                 className={`coupon ${o.eligible ? '' : 'off'}`}
-                onClick={() => o.eligible && setCoupon(o.code)} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && o.eligible && (e.preventDefault(), setCoupon(o.code))}>
+                onClick={() => o.eligible && setCoupon(o.code)} onKeyDown={(event) => {
+                  if (!['ArrowDown', 'ArrowRight', 'ArrowUp', 'ArrowLeft'].includes(event.key)) return;
+                  event.preventDefault();
+                  const direction = ['ArrowDown', 'ArrowRight'].includes(event.key) ? 1 : -1;
+                  for (let step = 1; step < options.length; step += 1) {
+                    const next = options[(index + direction * step + options.length) % options.length];
+                    if (next.eligible) { setCoupon(next.code); document.getElementById(`coupon-${next.code}`)?.focus(); break; }
+                  }
+                }} id={`coupon-${o.code}`}>
                 <div className="row between"><b className="small">{o.code === 'AUTO' || o.code === 'NONE' ? o.title : o.code}</b>{o.discount > 0 && <span className="badge good">-{inr(o.discount)}</span>}</div>
                 {o.code !== 'AUTO' && o.code !== 'NONE' && <div className="tiny">{o.title}</div>}
                 {o.reason && <div className="tiny muted">{o.reason}</div>}
-              </div>
+              </button>
             ))}
           </div>
           {q.promoTier !== 'FULL' && <p className="small row" style={{ marginTop: 8, color: q.promoTier === 'DISABLED' ? 'var(--bad)' : 'var(--warn)' }}><Info size={15} aria-hidden /> {q.promoMessage}</p>}

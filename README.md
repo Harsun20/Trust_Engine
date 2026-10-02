@@ -30,7 +30,7 @@ A lightweight **Trust Engine** layer that orchestrates existing systems instead 
 
 ## Key features
 
-- Landing page, 7-section dashboard, Demo Mode badge, Reset Demo.
+- Landing page, operational dashboard, retention strategy, Demo Mode badge, Reset Demo.
 - **Overview:** case KPIs with six-month comparison, live Trust Health score, trend charts, failure-chain story (old model vs Trust Engine model).
 - **Customer Experience ("Trust Picks"):** confidence-ranked catalog, hidden low-confidence items toggle, product detail with score breakdown, cart, coupon picker (auto-apply best), transparent price breakdown, delivery promise, order placement.
 - **Trust Engine:** all product x store combinations, formula, live traffic/rider sliders, ETA component breakdown.
@@ -38,6 +38,7 @@ A lightweight **Trust Engine** layer that orchestrates existing systems instead 
 - **Orders:** timeline, store accept/reject, rider assignment, delivery, cancel, delay, rider delay, missing item, item unavailable, substitution; **Recovery Engine** cards; simulated wallet.
 - **Support Cockpit:** orders with risk/status/refund columns and working Approve Refund, Issue Credit, Reassign Rider, Contact Store actions; tickets ranked by *Prototype Risk Prioritization*.
 - **Analytics:** case baseline vs *illustrative* simulation, scenario simulator with four sliders, business-impact numbers derived from the case.
+- **Retention Strategy:** experience-led approach focused on product quality, fulfillment reliability, fair recovery, and repeat-purchase outcomes rather than discount volume.
 
 ## Architecture
 
@@ -126,6 +127,9 @@ See `.env.example`. Nothing is required locally.
 |---|---|
 | `PORT` | Local API port (default 8787) |
 | `VITE_API_BASE_URL` | Optional. Set only if the API lives on another origin. Defaults to `/api`. |
+| `CORS_ORIGINS` | Comma-separated browser origins allowed by the API. Defaults to local Vite origins; same-origin deployment does not need this. |
+
+The API sends Helmet security headers, compresses responses, limits JSON bodies to 200 KB, and applies a 300-request per 15-minute rate limit per process. This demo has no user authentication or authorization; its in-memory rate limiter is not a substitute for a shared limiter, authentication, and monitoring in a multi-instance production deployment.
 
 ## API documentation
 
